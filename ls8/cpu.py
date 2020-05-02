@@ -18,6 +18,7 @@ RET = 0b00010001  # Decimal = 17, Return from subroutine.
 CMP = 0b10100111
 JMP = 0b01010100  # Jump to the address stored in the given register.
 JEQ = 0b01010101
+JNE = 0b01010110
 
 
 class CPU:
@@ -26,7 +27,7 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.reg = [0] * 8  # Register R0-R7
-        self.flag = [0] * 8
+        self.flag = 0b0
         self.ram = [0] * 256
         self.pc = 0  # Program Counter, which is the address/index of the current instruction
         self.running = True
@@ -80,15 +81,14 @@ class CPU:
         elif op == CMP:
             # If registerA is less than registerB, set the Less-than `L` flag to 1, otherwise set it to 0.
             if reg_a < reg_b:
-                self.flag[5] = 1
+                self.flag = 0b00000100
             # If registerA is greater than registerB, set the Greater-than `G` flag to 1, otherwise set it to 0.
             elif reg_a > reg_b:
-                self.flag[6] = 1
+                self.flag = 0b00000010
             # If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
             elif reg_a == reg_b:
-                self.flag[7] = 1
+                self.flag = 0b00000001
             # `FL` bits: `00000LGE`
-            self.reg[4] = self.flag
 
         else:
             raise Exception("Unsupported ALU operation")
@@ -175,13 +175,18 @@ class CPU:
                 self.reg[SP] += 1
             elif ir == CMP:  # Compare the values in two registers.
                 self.alu(ir, operand_a, operand_b)
-                self.pc += 3
+                self.pc += 1
             elif ir == JMP:  # Jump to the address stored in the given register.
                 # Set the `PC` to the address stored in the given register.
                 self.pc = self.reg[operand_a]
             elif ir == JEQ:
                 # If `equal` flag is set (true), jump to the address stored in the given register.
-                if self.flag[7]:
+                if self.flag == 0b1:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 1
+            elif ir == JNE:
+                if not self.flag == 0b0:
                     self.pc = self.reg[operand_a]
                 else:
                     self.pc += 1
