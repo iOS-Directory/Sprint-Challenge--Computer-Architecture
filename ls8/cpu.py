@@ -17,6 +17,7 @@ CALL = 0b01010000  # Decimal = 80
 RET = 0b00010001  # Decimal = 17, Return from subroutine.
 CMP = 0b10100111
 JMP = 0b01010100  # Jump to the address stored in the given register.
+JEQ = 0b01010101
 
 
 class CPU:
@@ -178,6 +179,12 @@ class CPU:
             elif ir == JMP:  # Jump to the address stored in the given register.
                 # Set the `PC` to the address stored in the given register.
                 self.pc = self.reg[operand_a]
+            elif ir == JEQ:
+                # If `equal` flag is set (true), jump to the address stored in the given register.
+                if self.flag[7]:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 1
             elif ir == HLT:
                 running = False
             else:
