@@ -15,6 +15,7 @@ POP = 0b01000110  # Decimal = 170
 # Calls a subroutine (function) at the address stored in the register.
 CALL = 0b01010000  # Decimal = 80
 RET = 0b00010001  # Decimal = 17, Return from subroutine.
+CMP = 0b10100111
 
 
 class CPU:
@@ -38,8 +39,8 @@ class CPU:
     def load(self):
         """Load a program into memory."""
         # Read the entry in the comand line to get the file name we pass in
-        #sys.argv[0] == "ls8.py"
-        #sys.argv[1] == "examples/mult.ls8"
+        # sys.argv[0] == "ls8.py"
+        # sys.argv[1] == "examples/mult.ls8"
         program_filename = sys.argv[1]
         # print(f"File: {program_filename}")
         # Un-hardcode the machine code
@@ -73,6 +74,23 @@ class CPU:
         # elif op == "SUB": etc
         elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == CMP:
+            L = "0"
+            G = "0"
+            E = "0"
+            # If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
+            if reg_a == reg_b:
+                E = "1"
+            # If registerA is less than registerB, set the Less-than `L` flag to 1, otherwise set it to 0.
+            elif reg_a < reg_b:
+                L = "1"
+            # If registerA is greater than registerB, set the Greater-than `G` flag to 1, otherwise set it to 0.
+            elif reg_a > reg_b:
+                G = "1"
+            # Create flag with values
+            flag = f"00000{L}{G}{E}"
+            self.reg[4] = int(flag, 2)
+
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -131,8 +149,8 @@ class CPU:
                 value = self.reg[operand_a]
                 # Get the address
                 adress = self.reg[SP]
-                #store in memeory
-                #self.ram[adress] = value
+                # store in memeory
+                # self.ram[adress] = value
                 self.ram_write(adress, value)
                 # increase pointer "SP"
                 self.pc += 2
@@ -156,6 +174,9 @@ class CPU:
                 # Pop the value from the top of the stack and store it in the `PC`.
                 self.pc = self.ram_read(self.reg[SP])
                 self.reg[SP] += 1
+            elif ir == CMP:  # Compare the values in two registers.
+                self.alu(ir, operand_a, operand_b)
+                self.pc += 3
             elif ir == HLT:
                 running = False
             else:
