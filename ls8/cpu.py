@@ -16,6 +16,7 @@ POP = 0b01000110  # Decimal = 170
 CALL = 0b01010000  # Decimal = 80
 RET = 0b00010001  # Decimal = 17, Return from subroutine.
 CMP = 0b10100111
+JMP = 0b01010100  # Jump to the address stored in the given register.
 
 
 class CPU:
@@ -24,6 +25,7 @@ class CPU:
     def __init__(self):
         """Construct a new CPU."""
         self.reg = [0] * 8  # Register R0-R7
+        self.flag = [0] * 8
         self.ram = [0] * 256
         self.pc = 0  # Program Counter, which is the address/index of the current instruction
         self.running = True
@@ -75,21 +77,17 @@ class CPU:
         elif op == MUL:
             self.reg[reg_a] *= self.reg[reg_b]
         elif op == CMP:
-            L = "0"
-            G = "0"
-            E = "0"
-            # If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
-            if reg_a == reg_b:
-                E = "1"
             # If registerA is less than registerB, set the Less-than `L` flag to 1, otherwise set it to 0.
-            elif reg_a < reg_b:
-                L = "1"
+            if reg_a < reg_b:
+                self.flag[5] = 1
             # If registerA is greater than registerB, set the Greater-than `G` flag to 1, otherwise set it to 0.
             elif reg_a > reg_b:
-                G = "1"
-            # Create flag with values
-            flag = f"00000{L}{G}{E}"
-            self.reg[4] = int(flag, 2)
+                self.flag[6] = 1
+            # If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
+            elif reg_a == reg_b:
+                self.flag[7] = 1
+            # `FL` bits: `00000LGE`
+            self.reg[4] = self.flag
 
         else:
             raise Exception("Unsupported ALU operation")
@@ -119,7 +117,7 @@ class CPU:
         running = True
         while running:
             # It needs to read the memory address that's stored in register `PC
-            # Which is the current index in memory
+            # Instruction Register, contains a copy of the currently executing instruction
             ir = self.ram_read(self.pc)
             # Sometimes the byte value is a register number,other times it's a constant value
             # Reg/Arg is one index over the pc
@@ -177,6 +175,9 @@ class CPU:
             elif ir == CMP:  # Compare the values in two registers.
                 self.alu(ir, operand_a, operand_b)
                 self.pc += 3
+            elif ir == JMP:  # Jump to the address stored in the given register.
+                # Set the `PC` to the address stored in the given register.
+                self.pc = self.reg[operand_a]
             elif ir == HLT:
                 running = False
             else:
