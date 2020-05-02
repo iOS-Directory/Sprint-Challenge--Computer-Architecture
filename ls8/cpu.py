@@ -20,6 +20,11 @@ JMP = 0b01010100  # Jump to the address stored in the given register.
 JEQ = 0b01010101
 JNE = 0b01010110
 
+# Flag constants
+LESS_THAN = 0b00000100
+GREATER_THAN = 0b00000010
+EQUAL = 0b00000001
+
 
 class CPU:
     """Main CPU class."""
@@ -81,13 +86,13 @@ class CPU:
         elif op == CMP:
             # If registerA is less than registerB, set the Less-than `L` flag to 1, otherwise set it to 0.
             if reg_a < reg_b:
-                self.flag = 0b00000100
+                self.flag = LESS_THAN
             # If registerA is greater than registerB, set the Greater-than `G` flag to 1, otherwise set it to 0.
             elif reg_a > reg_b:
-                self.flag = 0b00000010
+                self.flag = GREATER_THAN
             # If they are equal, set the Equal `E` flag to 1, otherwise set it to 0.
             elif reg_a == reg_b:
-                self.flag = 0b00000001
+                self.flag = EQUAL
             # `FL` bits: `00000LGE`
 
         else:
@@ -175,7 +180,7 @@ class CPU:
                 self.reg[SP] += 1
             elif ir == CMP:  # Compare the values in two registers.
                 self.alu(ir, operand_a, operand_b)
-                self.pc += 1
+                self.pc += 3
             elif ir == JMP:  # Jump to the address stored in the given register.
                 # Set the `PC` to the address stored in the given register.
                 self.pc = self.reg[operand_a]
@@ -184,12 +189,12 @@ class CPU:
                 if self.flag == 0b1:
                     self.pc = self.reg[operand_a]
                 else:
-                    self.pc += 1
+                    self.pc += 2
             elif ir == JNE:
                 if not self.flag == 0b0:
                     self.pc = self.reg[operand_a]
                 else:
-                    self.pc += 1
+                    self.pc += 2
             elif ir == HLT:
                 running = False
             else:
